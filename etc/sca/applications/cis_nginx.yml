@@ -1,0 +1,342 @@
+# Security Configuration Assessment
+# CIS Checks for 
+# Copyright (C) 2015-2019, Wazuh Inc.
+#
+# This program is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License (version 2) as published by the FSF - Free Software
+# Foundation
+#
+# Based on:
+
+policy:
+  id: ""
+  file: ""
+  name: ""
+  description: "This document provides prescriptive guidance for establishing a secure configuration posture for nginx running on Linux."
+  references:
+    - https://www.cisecurity.org/cis-benchmarks/
+
+requirements:
+  title: "Check that nginx is installed on the system. If your nginx installation is located at /etc/nginx, review the policy file"
+  description: "Requirements for running the SCA scan against the nginx policy."
+  condition: any
+  rules:
+    - 'f:/etc/nginx/nginx.conf'
+#    - 'f:/etc/nginx/conf.d/*'
+
+
+
+#2.3 Disable WebDAV Modules
+checks:
+  - id: 9000
+    title: "Ensure HTTP WebDAV module is not installed"
+    description: "The http_dav_module enables HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV) as defined by RFC 4918. This enables file-based operations on your web server, such as the ability to create, delete, change and move files on your server. Most modern architectures have replaced this functionality with cloud-based object storage, in which case the module should not be installed."
+    rationale: "WebDAV functionality opens up an unnecessary path for exploiting your web server. Through misconfigurations of WebDAV operations, an attacker may be able to access and manipulate files on the server."
+    remediation: "To remove the http_dav_module, recompile nginx from source without the --with- http_dav_module flag."
+    compliance:
+      - cis: ["2.3"]
+      - cis_csc: ["9.1", "9.2"]
+    references:
+      - http://nginx.org/en/docs/configure.html
+      - https://tools.ietf.org/html/rfc4918
+    condition: none
+    rules:
+      - ''
+
+
+   - id: 9000
+    title: "Ensure modules with gzip functionality are disabled"
+    description: "gzip is used for compression. Compression functionality should be disabled to prevent certain types of attacks from being performed successfully."
+    rationale: "Compression has been linked with the Breach attack and others. While the Breach attack has been mitigated with modern usages of the HTTP protocol, disabling the use of compression is considered a defense-in-depth strategy to mitigate other attacks."
+    remediation: "In order to disable the http_gzip_module, nginx must be recompiled from source. This can be accomplished using the below command in the folder you used during your original compilation. This must be done without the --with-http_gzip_static_module configuration directive."
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", ""]
+    references:
+      - http://nginx.org/en/docs/configure.html
+    condition: none
+    rules:
+      - ''
+
+      #2.5 Disable Autoindex Module
+  - id: 9002
+    title: "Ensure the Autoindex Module Is Disabled"
+    description: "The autoindex module processes requests ending with the slash character. This feature enables directory listing, which could be useful in attacker reconnaissance, so it should be disabled."
+    rationale: "Automated directory listings may reveal information helpful to an attacker, such as naming conventions and directory paths. Directory listings may also reveal files that were not intended to be revealed."
+    remediation: "Search the NGINX configuration files (nginx.conf and any included configuration files) to find autoindex directives."
+    compliance:
+      - cis: ["2.5"]
+      - cis_csc: ["18", "5.1"]
+    references:
+      - http://nginx.org/en/docs/http/ngx_http_autoindex_module.html
+    condition: 
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure the NGINX service account is locked "
+    description: "The nginx user account should have a valid password, but the account should be locked."
+    rationale: "As a defense-in-depth measure, the nginx user account should be locked to prevent logins and to prevent someone from switching users to nginx using the password. In general, there shouldn't be a need for anyone to have to su as nginx, and when there is a need, sudo should be used instead, which would not require the nginx account password."
+    remediation: "Use the passwd command to lock the nginx service account: passwd -l nginx"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - 
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure the NGINX service account has an invalid shell"
+    description: "The nginx account should not have the ability to log in, so the /sbin/nologin shell should be set for the account."
+    rationale: "The account used for nginx should only be used for the nginx service and does not need to have the ability to log in. This prevents an attacker who compromises the account to log in with it."
+    remediation: "Change the login shell for the nginx account to /sbin/nologin by using the following command: chsh -s /sbin/nologin nginx"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - 
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure NGINX directories and files are owned by root"
+    description: "The owner and group of the /etc/nginx directory and its files should be root."
+    rationale: "Setting ownership to only those users in the root group and the root user will reduce the likelihood of unauthorized modifications to the nginx configuration files."
+    remediation: "Run the following command to ensure ownership and group ownership is set to root: chown -R root:root /etc/nginx"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - 
+    condition: none
+    rules:
+      - ''
+
+
+   - id: 9000
+    title: "Ensure access to NGINX directories and files is restricted"
+    description: "Permissions on the /etc/nginx directory should enforce the principle of least privilege."
+    rationale: ""
+    remediation: " To set permissions to least privilege on the nginx configuration files, issue these commands: find /etc/nginx -type d | xargs chmod 750 find /etc/nginx -type f | xargs chmod 640"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "14.0"]
+    references:
+      - https://dev-sec.io/baselines/nginx/
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure the NGINX process ID (PID) file is secured"
+    description: "The PID file stores the main process ID of the nginx process. This file should be protected fromunauthorized modification."
+    rationale: "The PID file should be owned by root and the group root. It should also be readable to everyone, but only writable by root (permissions 644). This will prevent unauthorized modification of the PID file, which could cause a denial of service."
+    remediation: "If the PID file is not owned by root, issue this command: chown root:root /var/run/nginx.pid"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - 
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure keepalive_timeout is 10 seconds or less, but not 0"
+    description: "Persistent connections are leveraged by all modern browsers to facilitate greater web performance. The keep-alive timeout limits the time a persistent connection may remain open. Setting the keep-alive timeout allows this timeout to be controlled on the server side."
+    rationale: "Setting a keep-alive timeout on the server side helps mitigate denial of service attacks that establish too many persistent connections, exhausting server resources."
+    remediation: "Find the HTTP or server block of your nginx configuration, and add the keepalive_timeout directive. Set it to 10 seconds or less, but not 0. This example command sets it to 10 seconds: keepalive_timeout 10;"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - http://nginx.org/en/docs/http/ngx_http_core_module.html%23keepalive_timeout
+    condition: none
+    rules:
+      - ''
+
+
+   - id: 9000
+    title: "Ensure send_timeout is set to 10 seconds or less, but not 0"
+    description: "The send_timeout directive sets a timeout for transmitting a response to the client between two successive write operations."
+    rationale: "Setting the send_timeout directive on the server side helps mitigate slow HTTP denial of service attacks by ensuring write operations taking up large amounts of time are closed."
+    remediation: "Find the HTTP or server block of your nginx configuration, and add the send_timeout directive. Set it to 10 seconds or less, but not 0. - send_timeout 10;"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", ""]
+    references:
+      - https://www.owasp.org/index.php/SCG_WS_nginx
+      - http://nginx.org/en/docs/http/ngx_http_core_module.html%23send_timeout
+    condition: none
+    rules:
+      - ''
+
+
+   - id: 9000
+    title: "Ensure access logging is enabled"
+    description: "The access_log directive should be on for every core site. It is enabled by default."
+    rationale: "Access logging allows incident responders and auditors to investigate access to a system in the event of an incident."
+    remediation: "Ensure the access_log directive is configured for every core site your organization requires logging for. This should look similar to the below configuration snippet. You may use different log file locations based on your needs: access_log /var/log/nginx/host.access.log main;
+ "
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "6.3"]
+    references:
+      - http://nginx.org/en/docs/http/ngx_http_log_module.html%23log_format
+    condition: none
+    rules:
+      - ''
+
+
+   - id: 9000
+    title: "Ensure HTTP is redirected to HTTPS "
+    description: "Browsers and clients establish encrypted connections with servers by leveraging HTTPS. Requests leveraging HTTP are unencrypted. Unencrypted requests should be redirected so they are encrypted. Any listening HTTP port on your web server should redirect to a server profile that uses encryption. The default HTTP (unencrypted) port is 80.
+"
+    rationale: "Redirecting user agent traffic to HTTPS helps to ensure all user traffic is encrypted. Modern browsers alert users that your website is insecure when HTTPS is not used. This can decrease user trust in your website and ultimately result in decreased use of your web services. Redirection from HTTP to HTTPS couples security with usability; users are able to access your website even if they lack the security awareness to use HTTPS over HTTP when requesting your website."
+    remediation: "Edit your web server or proxy configuration file to redirect all unencrypted listening ports, such as port 80, using a redirection through the return directive- server { listen 80; server_name cisecurity.org; return 301 https://$host$request_uri; }"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["14.4", "5.1"]
+    references:
+      - https://serversforhackers.com/c/redirect-http-to-https-nginx
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure private key permissions are restricted "
+    description: "The server's private key should be protected from unauthorized access by limiting access based on the principle of least privilege."
+    rationale: "A server's private key file should be restricted to 400 permissions. This ensures only the owner of the private key file can access it. This is the minimum necessary permissions for the server to operate. If the private key file is not protected, an unauthorized user with access to the server may be able to find the private key file and use it to decrypt traffic sent to your server."
+    remediation: "Run the following command on your key file to ensure its permissions are set to 400. The file name /etc/nginx/nginx.key should be replaced with the location of your key file - sudo chmod 400 /etc/nginx/nginx.key"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - 
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure only modern TLS protocols are used "
+    description: "Only modern TLS protocols should be enabled in NGINX for all client connections and upstream connections. Removing legacy TLS and SSL protocols (SSL 3.0, TLS 1.0 and 1.1), and enabling emerging and stable TLS protocols (TLS 1.2), ensures users are able to take advantage of strong security capabilities and protects them from insecure legacy protocols."
+    rationale: "TLS 1.2 takes advantage of several security features including modern cipher suites, perfect forward security, and authenticated encryption.
+"
+    remediation: "Run the following commands to change your ssl_protocols if they are already configured. This remediation advice assumes your nginx configuration file does not include server configuration outside of /etc/nginx/nginx.conf. You may have to also inspect the include files in your nginx.conf to ensure this is properly implemented. - sed -i "s/ssl_protocols[^;]*;/ssl_protocols TLSv1.2;/" /etc/nginx/nginx.conf"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - https://webkit.org/blog/8462/deprecation-of-legacy-tls-1-0-and-1-1-versions/
+      - https://www.cloudflare.com/learning-resources/tls-1-3/
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure HTTP Strict Transport Security (HSTS) is enabled"
+    description: "HTTP Strict Transport Security (HSTS) headers instruct a user agent on how to communicate with a web server. HSTS headers ensure the strict transport security policies built into browsers and other user agents are informed only to communicate over HTTPS. HSTS with long validity periods should be used to most effectively secure your user population. Strict-Transport-Security should have a long max-age, which is recommended to be at least six months in length. This ensures the browser remembers your website should only be accessible via HTTPS for this amount of time."
+    rationale: "HSTS headers help protect a server's users from accessing the server over unencrypted protocols. This header helps to prevent HTTP downgrade attacks."
+    remediation: "Ensure the below snippet of code can be found in your server configuration for your proxy or web server. This will ensure the HSTS header is set with a validity period of six months, or 15768000 seconds. - server { add_header Strict-Transport-Security "max-age=15768000;"; }"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["14.4", "5.1"]
+    references:
+      - https://www.globalsign.com/en/blog/what-is-hsts-and-how-do-i-use-it/
+      - https://mozilla.github.io/server-side-tls/ssl-config-generator/
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security%23Preloading_Strict_Transport_Security
+      - https://hstspreload.org/
+    condition: none
+    rules:
+      - ''
+
+
+
+   - id: 9000
+    title: "Ensure timeout values for reading the client header and body are set correctly "
+    description: "The client_header_timeout and client_body_timeout directives define the time the server will wait for the header or body to be sent from the client. If the client does not send the entire header in this predefined timeframe, the server will send back a 408 request timeout error."
+    rationale: "Setting the client header and body timeouts help your server mitigate possible denial of service attacks. By timing out a request, the server is able to free up resources that may be waiting for the body or header."
+    remediation: "Find the HTTP or server block of your nginx configuration and add the client_header_timeout and client_body_timeout directives set to the configuration. The below example sets the timeouts to 10 seconds. - client_body_timeout 10; client_header_timeout 10;"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - https://www.owasp.org/index.php/SCG_WS_nginx
+      - https://blog.qualys.com/securitylabs/2011/11/02/how-to-protect-against-slow-http-attacks
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure the maximum request body size is set correctly"
+    description: "The client_max_body_size directive sets the size of the request body that is allowed to read a client request. This defines the number of bytes allowed in a request and is equivalent to the Content-Length request header field."
+    rationale: "Limiting the size of the request body helps prevent unexpectedly long or large client requests from being passed to an application to perform buffer overflow attacks. This value should be set low enough to protect the application but high enough not to interfere with functionality and block legitimate request bodies."
+    remediation: "Find the HTTP or server block of your nginx configuration and add the client_max_body_size set to 100K in this block. The appropriate value may be different based on your application's needs. - client_max_body_size 100K"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - https://www.cyberciti.biz/tips/linux-unix-bsd-nginx-webserver-security.html
+      - http://nginx.org/en/docs/http/ngx_http_core_module.html%23client_body_temp_path
+      - https://www.acunetix.com/blog/articles/nginx-server-security-hardening-configuration-1/
+      - https://www.tecmint.com/nginx-web-server-security-hardening-and-performance-tips/
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure X-Frame-Options header is configured and enabled"
+    description: "The X-Frame-Options header should be set to allow specific websites or no sites at all to embed your website as an object within their own, depending on your organizational policy and application needs."
+    rationale: "The X-Frame-Options header allows you to mitigate the risk of clickjacking attacks."
+    remediation: "Add the below to your server blocks in your nginx configuration. The policy should be configured to meet your organization's needs. - add_header X-Frame-Options "SAMEORIGIN";"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+      - https://scotthelme.co.uk/hardening-your-http-response-headers/
+      - https://www.veracode.com/blog/2014/03/guidelines-for-setting-security-headers
+      - https://www.owasp.org/index.php/OWASP_Secure_Headers_Project
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure X-Content-Type-Options header is configured and enabled "
+    description: "The X-Content-Type-Options header should be used to force supported user agents to check an HTTP response's content type header with what is expected from the destination of the request."
+    rationale: "Implementing the X-Content-Type-Options header with the "nosniff" directive helps to prevent drive-by download attacks where a user agent is sniffing content types in responses."
+    remediation: "Open the nginx configuration file that contains your server blocks. Add the below line into your server block to add X-Content-Type-Options header and direct your user agent to not sniff content types. - add_header X-Content-Type-Options "nosniff";"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["7", "5.1"]
+    references:
+      - https://scotthelme.co.uk/hardening-your-http-response-headers/
+      - https://www.veracode.com/blog/2014/03/guidelines-for-setting-security-headers
+      - https://www.owasp.org/index.php/OWASP_Secure_Headers_Project
+      - https://fetch.spec.whatwg.org/%23x-content-type-options-header
+      - https://www.iana.org/assignments/message-headers/message-headers.xml%23perm-headers
+    condition: none
+    rules:
+      - ''
+
+   - id: 9000
+    title: "Ensure the X-XSS-Protection Header is enabled and configured properly "
+    description: "The X-Xss-Protection Header allows you to leverage browser-based protections against cross-site scripting. This should be implemented on your web servers to protect your users and increase user trust in your site. Your policy should be set in blocking mode when possible to ensure the browser blocks a page if cross-site scripting is detected."
+    rationale: "X-Xss-Protection allows you to protect users whose browsers do not support Content Security Policy (generally older browsers), or protect users if you do not have a Content Security Policy."
+    remediation: "Open your nginx configuration file that contains your server blocks. Add the below line into your server block to add Content-Security-Policy and direct your user agent to block reflected cross-site scripting. - add_header X-Xss-Protection "1; mode=block";"
+    compliance:
+      - cis: [""]
+      - cis_csc: ["", "5.1"]
+    references:
+      - https://www.owasp.org/index.php/OWASP_Secure_Headers_Project
+      - https://scotthelme.co.uk/hardening-your-http-response-headers/
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+    condition: none
+    rules:
+      - ''
+
+
